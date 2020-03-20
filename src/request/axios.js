@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-03-01 17:19:53
- * @LastEditTime: 2020-03-14 12:34:29
+ * @LastEditTime: 2020-03-20 14:09:24
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: \vue-blog\src\request\axios.js
@@ -13,7 +13,6 @@ import BASE from './base'
 // 这里使用element-ui Loading
 import { Loading } from 'element-ui';
 import QS from 'qs'; // 引入qs模块，用来序列化post类型的数据，后面会提到
-// antd的toast提示框组件，大家可根据自己的ui组件更改。
 import { message } from 'ant-design-vue';
 
 
