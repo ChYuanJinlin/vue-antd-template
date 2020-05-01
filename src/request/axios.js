@@ -1,19 +1,19 @@
 /*
  * @Author: your name
  * @Date: 2020-03-01 17:19:53
- * @LastEditTime: 2020-03-20 14:09:24
+ * @LastEditTime: 2020-04-17 16:28:11
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: \vue-blog\src\request\axios.js
  */
-
+// 在http.js中引入axios
 import axios from 'axios'; // 引入axios
-import router from 'vue-router'
+import vueRouter from 'vue-router'
+const router = new vueRouter();
 import BASE from './base'
-// 这里使用element-ui Loading
 import { Loading } from 'element-ui';
 import QS from 'qs'; // 引入qs模块，用来序列化post类型的数据，后面会提到
-import { message } from 'ant-design-vue';
+import { Message } from 'element-ui';
 
 
 // 环境的切换
@@ -28,7 +28,7 @@ else if (process.env.NODE_ENV == 'production') {
 }
 
 // 设置请求超时
-axios.defaults.timeout = 1000 * 60 * 60;
+axios.defaults.timeout = 1000 * 60 * 60 * 60;
 // post请求头的设置
 axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';
 
@@ -42,10 +42,11 @@ axios.interceptors.request.use(
         // 每次发送请求之前判断vuex中是否存在token        
         // 如果存在，则统一在http请求的header都加上token，这样后台根据token判断你的登录情况
         // 即使本地存在token，也有可能token是过期的，所以在响应拦截器中要对返回状态进行判断 
-        // console.log('config',config);
+        console.log('config',config);
 
-        const token = localStorage.token;
-        token && (config.headers.Authorization = token);
+
+        config.headers.Authorization = 'Bearer ' + (localStorage.token || '');
+
         return config;
     },
     error => {
@@ -71,17 +72,29 @@ axios.interceptors.response.use(
     // 然后根据返回的状态码进行一些操作，例如登录过期提示，错误提示等等
     // 下面列举几个常见的操作，其他需求可自行扩展
     error => {
+        console.log('error--', error);
+        console.log('router.currentRoute.fullPath--', router.currentRoute.fullPath);
         if (error && error.response.status) {
             switch (error.response.status) {
                 // 401: 未登录
                 // 未登录则跳转登录页面，并携带当前页面的路径
                 // 在登录成功后返回当前页面，这一步需要在登录页操作。                
                 case 401:
+                    Message({
+                        message: error.response.data.msg,
+                        type: 'warning',
+                    });
                     router.replace({
                         path: '/login',
                         query: {
                             redirect: router.currentRoute.fullPath
                         }
+                    });
+                    break;
+                    case 422:
+                    Message({
+                        message: error.response.data.msg,
+                        type: 'err',
                     });
                     break;
 
@@ -91,17 +104,18 @@ axios.interceptors.response.use(
                 // 跳转登录页面                
                 case 403:
                     Message({
-                        message: '登录过期，请重新登录',
+                        message: error.response.data.msg,
                         type: 'warning',
                     });
                     // 清除token
                     localStorage.removeItem('token');
+                    localStorage.removeItem('isLogin');
                     // 跳转登录页面，并将要浏览的页面fullPath传过去，登录成功后跳转需要访问的页面 
                     setTimeout(() => {
                         router.replace({
                             path: '/login',
                             query: {
-                                redirect: router.currentRoute.fullPath
+                                redirect: router.fullPath
                             }
                         });
                     }, 1000);
@@ -117,7 +131,7 @@ axios.interceptors.response.use(
                 // 其他错误，直接抛出错误提示
                 default:
                     Message({
-                        message: error.response.data.msg,
+                        message: '服务器错误...',
                         type: 'error',
                     });
             }
@@ -125,7 +139,7 @@ axios.interceptors.response.use(
         }
     })
 
-// loadingOpt params 具体参数看antd 参数
+// loadingOpt params 具体参数看element 参数
 export default function ajax(url, data = {}, loadingOpt, method = 'get') {
 
     let loadingInstance
@@ -142,6 +156,8 @@ export default function ajax(url, data = {}, loadingOpt, method = 'get') {
 
     }
     let promise
+    // console.log(arguments);
+    
     return new Promise((resovle, reject) => {
         if (method === 'get') {
             promise = axios({
@@ -161,17 +177,17 @@ export default function ajax(url, data = {}, loadingOpt, method = 'get') {
         promise.then(res => {
 
             resovle(res.data);
-            // console.log('res---',res);
-
-            // console.log('执行');
+            console.log(res);
             loadingInstance && loadingInstance.close()
 
         })
             .catch(error => {
                 console.log('error', error);
                 loadingInstance && loadingInstance.close()
-                // 失败提示
-                message.error(error.message)
+                Message({
+                    message: error.message || error.data.msg || error.data ,
+                    type: 'error'
+                });
             })
 
 
