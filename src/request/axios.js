@@ -196,3 +196,6 @@ export default function ajax(url, data = {}, loadingOpt, method = 'get') {
 
 }
 
+['options', 'get', 'post', 'put', 'head', 'delete', 'trace', 'connect'].forEach((method) => {
+    ajax[method] = (url, data , loadingOpt) => ajax(url, data = {}, loadingOpt, method)
+});
